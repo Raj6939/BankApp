@@ -17,7 +17,7 @@
 
 <script>
 import QRCode from "qrcode";
-
+import config from "../../config";
 export default {
     data() {
         return {
@@ -47,7 +47,7 @@ export default {
         async generateQR() {
             try {
                 const qrData = JSON.stringify({
-                    wsUrl: "wss://rajpatil-production.up.railway.app",
+                    wsUrl: config.websocketUrl,
                     clientId: this.clientId
                 });
                 await QRCode.toCanvas(this.$refs.qrCanvas, qrData);
@@ -60,7 +60,7 @@ export default {
                 this.ws.close();
             }
 
-            this.ws = new WebSocket("wss://rajpatil-production.up.railway.app");
+            this.ws = new WebSocket(config.websocketUrl);
 
             this.ws.onopen = () => {
                 console.log("WebSocket connected.");
