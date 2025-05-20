@@ -3,14 +3,23 @@
         <!-- QR Code View -->
         <div v-if="!receivedData" class="qr-view" :class="{ 'fade-out': receivedData }">
             <div class="brand">
-                <div class="logo-pulse"></div>
-                <span class="brand-text">SecureConnect</span>
+                <div class="bank-logo">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 4L4 12H36L20 4Z" class="logo-primary"/>
+                        <path d="M8 12V28H32V12" class="logo-primary"/>
+                        <path d="M4 32H36" class="logo-accent"/>
+                        <circle cx="20" cy="20" r="6" class="logo-accent"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <span class="bank-name">NEXUS</span>
+                    <span class="bank-type">PRIVATE BANK</span>
+                </div>
             </div>
             
             <div class="context-message">
-                <div class="context-icon">🏦</div>
-                <h2>Secure Data Request</h2>
-                <p>Scan with your banking app to securely share selected information</p>
+                <h2>Secure Account Verification</h2>
+                <p>Use the Nexus Mobile app to verify your identity</p>
             </div>
 
             <div class="qr-wrapper">
@@ -213,37 +222,53 @@ export default {
 .brand {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
     margin-bottom: 32px;
 }
 
-.logo-pulse {
+.bank-logo {
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    border-radius: 12px;
     position: relative;
 }
 
-.logo-pulse::after {
-    content: '';
-    position: absolute;
-    top: -4px;
-    left: -4px;
-    right: -4px;
-    bottom: -4px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    opacity: 0.3;
-    animation: pulse 2s infinite;
+.bank-logo svg {
+    width: 100%;
+    height: 100%;
+}
+
+.logo-primary {
+    stroke: #1e3a8a;
+    stroke-width: 2;
+    fill: none;
+}
+
+.logo-accent {
+    stroke: #3b82f6;
+    stroke-width: 2;
+    fill: none;
 }
 
 .brand-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.bank-name {
     font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #1e3a8a;
+    line-height: 1;
+}
+
+.bank-type {
+    font-size: 12px;
     font-weight: 600;
-    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    letter-spacing: 1px;
+    color: #3b82f6;
+    margin-top: 4px;
 }
 
 /* QR Code Styling */
@@ -511,21 +536,16 @@ export default {
     animation: fadeIn 0.5s ease-out;
 }
 
-.context-icon {
-    font-size: 32px;
-    margin-bottom: 16px;
-}
-
 .context-message h2 {
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 600;
-    color: #1e293b;
+    color: #1e3a8a;
     margin-bottom: 8px;
 }
 
 .context-message p {
     color: #64748b;
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.5;
 }
 
@@ -537,13 +557,14 @@ export default {
 }
 
 .security-item {
+    background: rgba(30, 58, 138, 0.03);
+    border: 1px solid rgba(30, 58, 138, 0.1);
     display: flex;
     align-items: center;
     gap: 8px;
     color: #64748b;
     font-size: 14px;
     padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.8);
     border-radius: 20px;
     backdrop-filter: blur(8px);
     transition: transform 0.2s ease;
@@ -557,7 +578,7 @@ export default {
     margin-top: 24px;
     padding: 12px 20px;
     background: #f8fafc;
-    border-left: 4px solid #3b82f6;
+    border-left: 4px solid #1e3a8a;
     border-radius: 8px;
     color: #64748b;
     font-size: 14px;
