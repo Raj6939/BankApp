@@ -1,99 +1,78 @@
 <template>
-    <div class="bank-container">
-        <header class="bank-header">
-            <div class="header-content">
-                <div class="logo-section">
-                    <div class="bank-logo">ABC</div>
-                    <h1>Bank ABC</h1>
+    <div class="container">
+        <!-- QR Code View -->
+        <div v-if="!receivedData" class="qr-view" :class="{ 'fade-out': receivedData }">
+            <div class="brand">
+                <div class="logo-pulse"></div>
+                <span class="brand-text">SecureConnect</span>
+            </div>
+            
+            <div class="context-message">
+                <div class="context-icon">🏦</div>
+                <h2>Secure Data Request</h2>
+                <p>Scan with your banking app to securely share selected information</p>
+            </div>
+
+            <div class="qr-wrapper">
+                <div class="secure-border">
+                    <canvas ref="qrCanvas" class="qr-code"></canvas>
                 </div>
-                <p class="tagline">Your Trusted Banking Partner</p>
-                <div class="security-badge">
+            </div>
+            
+            <div class="status-indicator" :class="wsStatusClass">
+                {{ wsStatusMessage }}
+            </div>
+            
+            <div class="security-features">
+                <div class="security-item">
                     <span class="security-icon">🔒</span>
-                    Secure Banking Portal
+                    End-to-end encrypted
                 </div>
-            </div>
-            <div class="header-decoration"></div>
-        </header>
-        
-        <div class="main-content">
-            <div class="welcome-message">
-                <h2>Welcome to Digital Banking</h2>
-                <p>Experience secure and seamless banking at your fingertips</p>
-            </div>
-
-            <div class="qr-section">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="icon-circle">
-                            <span class="qr-icon">📱</span>
-                        </div>
-                        <h2>Quick Account Access</h2>
-                    </div>
-                    <p class="subtitle">Scan the QR code with your banking app</p>
-                    
-                    <div class="qr-container">
-                        <div class="qr-frame">
-                            <canvas ref="qrCanvas" class="qr-code"></canvas>
-                            <div class="qr-corners"></div>
-                        </div>
-                    </div>
-
-                    <div class="connection-status" :class="wsStatusClass">
-                        <span class="status-dot"></span>
-                        {{ wsStatusMessage }}
-                    </div>
-
-                    <div class="security-info">
-                        <div class="security-item">
-                            <span class="security-icon">🔐</span>
-                            End-to-End Encrypted
-                        </div>
-                        <div class="security-item">
-                            <span class="security-icon">⚡</span>
-                            Instant Access
-                        </div>
-                    </div>
+                <div class="security-item">
+                    <span class="security-icon">👤</span>
+                    PIN protected
+                </div>
+                <div class="security-item">
+                    <span class="security-icon">✨</span>
+                    Selective sharing
                 </div>
             </div>
 
-            <!-- Authentication Success Card -->
-            <div v-if="receivedData" class="data-container card fade-in">
-                <div class="success-animation">
-                    <div class="success-checkmark">✔️</div>
-                </div>
-                <h3>Authentication Successful</h3>
-                <div class="data-details">
-                    <div class="progress-bar">
-                        <div class="progress-fill"></div>
-                    </div>
-                    <div class="details-content">
-                        <p v-for="(value, key) in receivedData" :key="key">
-                            <strong>{{ key }}:</strong> {{ value }}
-                        </p>
-                    </div>
-                </div>
+            <div class="info-tooltip">
+                Your data remains private. Share only what you choose.
             </div>
         </div>
 
-        <footer class="bank-footer">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h4>Secure Banking</h4>
-                    <p>Protected by Advanced Encryption</p>
+        <!-- Enhanced Data View -->
+        <div v-if="receivedData" class="data-view">
+            <div class="success-indicator">
+                <div class="success-circle">
+                    <svg class="checkmark" viewBox="0 0 24 24">
+                        <path class="checkmark-path" d="M3.5 12.5L9 18L20 7" fill="none" stroke="currentColor" stroke-width="2"/>
+                    </svg>
                 </div>
-                <div class="footer-section">
-                    <h4>24/7 Support</h4>
-                    <p>Always Here to Help</p>
-                </div>
-                <div class="footer-section">
-                    <h4>Global Access</h4>
-                    <p>Bank from Anywhere</p>
+                <span class="success-text">Verified</span>
+                <p class="success-subtitle">Data shared securely</p>
+            </div>
+
+            <div class="data-grid">
+                <div v-for="(value, key) in receivedData" :key="key" class="data-item">
+                    <div class="data-value">{{ value }}</div>
+                    <div class="data-label">{{ formatLabel(key) }}</div>
                 </div>
             </div>
-            <div class="footer-bottom">
-                <p>© 2024 Bank ABC. All rights reserved.</p>
+
+            <div class="verification-details">
+                <div class="timestamp">
+                    <span class="detail-icon">🕒</span>
+                    {{ currentDateTime }}
+                </div>
+                <div class="session-id">
+                    <span class="detail-icon">🔐</span>
+                    Session #{{ clientId.slice(0, 8) }}
+                </div>
             </div>
-        </footer>
+        </div>
     </div>
 </template>
 
@@ -107,6 +86,7 @@ export default {
             clientId: Math.random().toString(36).substr(2, 9), // Unique Client ID
             receivedData: null,
             wsStatus: "connecting", // WebSocket status: "connecting" | "connected" | "disconnected"
+            currentDateTime: ""
         };
     },
     computed: {
@@ -186,11 +166,30 @@ export default {
             } else {
                 console.warn("WebSocket is not open. Message not sent.");
             }
+        },
+        formatLabel(key) {
+            return key.split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        },
+        updateDateTime() {
+            const now = new Date();
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            this.currentDateTime = now.toLocaleDateString('en-US', options);
         }
     },
     mounted() {
         this.generateQR();
         this.setupWebSocket();
+        this.updateDateTime();
+        setInterval(this.updateDateTime, 1000);
     },
     beforeDestroy() {
         if (this.ws) {
@@ -201,334 +200,387 @@ export default {
 </script>
 
 <style scoped>
-.bank-container {
+.container {
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #f5f7fa;
-    color: #2c3e50;
-}
-
-.bank-header {
-    background-color: #1a365d;
-    color: white;
-    padding: 2rem;
-    position: relative;
-    overflow: hidden;
-}
-
-.header-content {
-    position: relative;
-    z-index: 2;
-    max-width: 1200px;
-    margin: 0 auto;
-    text-align: center;
-}
-
-.header-decoration {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
-    transform: skewY(-6deg);
-    transform-origin: top left;
-}
-
-.logo-section {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    padding: 20px;
 }
 
-.bank-logo {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
-    padding: 0.8rem;
-    font-size: 1.5rem;
-    font-weight: bold;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.security-badge {
-    display: inline-flex;
+/* Brand Styling */
+.brand {
+    display: flex;
     align-items: center;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    gap: 0.5rem;
+    gap: 12px;
+    margin-bottom: 32px;
 }
 
-.welcome-message {
+.logo-pulse {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border-radius: 12px;
+    position: relative;
+}
+
+.logo-pulse::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    opacity: 0.3;
+    animation: pulse 2s infinite;
+}
+
+.brand-text {
+    font-size: 24px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* QR Code Styling */
+.qr-view {
     text-align: center;
-    margin-bottom: 2rem;
+    max-width: 400px;
+    width: 100%;
 }
 
-.welcome-message h2 {
-    color: #1a365d;
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-}
-
-.welcome-message p {
-    color: #64748b;
-    font-size: 1.1rem;
-}
-
-.card {
+.qr-wrapper {
+    position: relative;
+    padding: 24px;
     background: white;
-    border-radius: 16px;
-    padding: 2rem;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    margin-bottom: 2rem;
-    text-align: center;
+    border-radius: 24px;
+    box-shadow: 
+        0 4px 6px rgba(0, 0, 0, 0.05),
+        0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 24px;
     transition: transform 0.3s ease;
 }
 
-.card:hover {
-    transform: translateY(-5px);
+.qr-wrapper:hover {
+    transform: translateY(-2px);
 }
 
-.card-header {
-    margin-bottom: 1.5rem;
-}
-
-.icon-circle {
-    width: 60px;
-    height: 60px;
-    background: #f0f9ff;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-}
-
-.qr-icon {
-    font-size: 2rem;
-}
-
-.qr-container {
+.secure-border {
     position: relative;
-    padding: 2rem;
-    margin: 2rem 0;
-}
-
-.qr-frame {
-    position: relative;
+    padding: 1px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border-radius: 16px;
     display: inline-block;
 }
 
 .qr-code {
-    border-radius: 12px;
-    padding: 1rem;
+    display: block;
+    border-radius: 15px;
     background: white;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
-.qr-corners::before,
-.qr-corners::after {
-    content: '';
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    border: 3px solid #1a365d;
+/* Status Indicator */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 20px;
+    border-radius: 40px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
 }
 
-.qr-corners::before {
-    top: 0;
-    left: 0;
-    border-right: none;
-    border-bottom: none;
+.status-connected {
+    background: #dcfce7;
+    color: #166534;
 }
 
-.qr-corners::after {
-    bottom: 0;
-    right: 0;
-    border-left: none;
-    border-top: none;
+.status-disconnected {
+    background: #fee2e2;
+    color: #991b1b;
 }
 
-.security-info {
+.status-connecting {
+    background: #fef3c7;
+    color: #92400e;
+    animation: pulse 2s infinite;
+}
+
+/* Security Hint */
+.security-hint {
     display: flex;
+    align-items: center;
     justify-content: center;
-    gap: 2rem;
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid #e2e8f0;
+    gap: 8px;
+    margin-top: 16px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.security-icon {
+    font-size: 16px;
+}
+
+/* Enhanced Data View */
+.data-view {
+    width: 100%;
+    max-width: 600px;
+    animation: slideUp 0.5s ease-out;
+}
+
+.success-indicator {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.success-circle {
+    width: 64px;
+    height: 64px;
+    background: #22c55e;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: scaleIn 0.5s ease-out;
+}
+
+.checkmark {
+    width: 32px;
+    height: 32px;
+    color: white;
+}
+
+.checkmark-path {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: drawCheck 0.6s ease-out forwards 0.3s;
+}
+
+.success-text {
+    font-size: 20px;
+    font-weight: 600;
+    color: #166534;
+    opacity: 0;
+    animation: fadeIn 0.3s ease-out forwards 0.6s;
+}
+
+.data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.data-item {
+    background: white;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    opacity: 0;
+    animation: fadeIn 0.3s ease-out forwards;
+    animation-delay: calc(var(--index, 0) * 0.1s + 0.8s);
+}
+
+.data-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.08);
+}
+
+.data-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 8px;
+}
+
+.data-label {
+    font-size: 14px;
+    color: #64748b;
+}
+
+.verification-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+    color: #64748b;
+    font-size: 14px;
+    opacity: 0;
+    animation: fadeIn 0.3s ease-out forwards 1.2s;
+}
+
+.detail-icon {
+    margin-right: 8px;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.1;
+        transform: scale(1.1);
+    }
+    100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0);
+    }
+    to {
+        transform: scale(1);
+    }
+}
+
+@keyframes drawCheck {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-out {
+    animation: fadeOut 0.3s ease-out forwards;
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+@media (max-width: 480px) {
+    .data-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .verification-details {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .security-features {
+        padding: 0 16px;
+    }
+
+    .info-tooltip {
+        margin: 24px 16px 0;
+    }
+}
+
+.context-message {
+    margin-bottom: 24px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.context-icon {
+    font-size: 32px;
+    margin-bottom: 16px;
+}
+
+.context-message h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 8px;
+}
+
+.context-message p {
+    color: #64748b;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.security-features {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
 }
 
 .security-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 8px;
     color: #64748b;
-    font-size: 0.9rem;
+    font-size: 14px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+    backdrop-filter: blur(8px);
+    transition: transform 0.2s ease;
 }
 
-.security-icon {
-    font-size: 1.2rem;
+.security-item:hover {
+    transform: translateX(4px);
 }
 
-.connection-status {
-    margin: 1rem auto;
-    padding: 0.75rem 1.5rem;
-    border-radius: 25px;
-    font-size: 0.9rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
+.info-tooltip {
+    margin-top: 24px;
+    padding: 12px 20px;
+    background: #f8fafc;
+    border-left: 4px solid #3b82f6;
+    border-radius: 8px;
+    color: #64748b;
+    font-size: 14px;
+    text-align: left;
+    animation: slideIn 0.5s ease-out;
 }
 
-.status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    display: inline-block;
+.success-subtitle {
+    color: #64748b;
+    font-size: 14px;
+    margin-top: 4px;
+    opacity: 0;
+    animation: fadeIn 0.3s ease-out forwards 0.8s;
 }
 
-.status-connected {
-    background-color: #ecfdf5;
-}
-
-.status-connected .status-dot {
-    background-color: #059669;
-    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2);
-}
-
-.status-disconnected {
-    background-color: #fef2f2;
-}
-
-.status-disconnected .status-dot {
-    background-color: #dc2626;
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
-}
-
-.status-connecting {
-    background-color: #fffbeb;
-}
-
-.status-connecting .status-dot {
-    background-color: #d97706;
-    box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.2);
-    animation: pulse 1.5s infinite;
-}
-
-.success-animation {
-    margin-bottom: 1.5rem;
-}
-
-.success-checkmark {
-    font-size: 3.5rem;
-    color: #059669;
-    animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.data-details {
-    background-color: #f8fafc;
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-.progress-bar {
-    height: 4px;
-    background-color: #e2e8f0;
-    margin-bottom: 1rem;
-}
-
-.progress-fill {
-    height: 100%;
-    background-color: #059669;
-    animation: progressFill 1s ease-out forwards;
-}
-
-.details-content {
-    padding: 1.5rem;
-}
-
-.details-content p {
-    margin: 0.75rem 0;
-    color: #4b5563;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.details-content strong {
-    color: #1a365d;
-}
-
-.footer-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
-    padding: 2rem;
-}
-
-.footer-section {
-    text-align: center;
-}
-
-.footer-section h4 {
-    color: white;
-    margin-bottom: 0.5rem;
-}
-
-.footer-bottom {
-    text-align: center;
-    padding-top: 1.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.fade-in {
-    animation: fadeIn 0.5s ease-out;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.2); opacity: 0.5; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes bounceIn {
-    0% { transform: scale(0); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
-}
-
-@keyframes progressFill {
-    from { width: 0; }
-    to { width: 100%; }
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@media (max-width: 768px) {
-    .footer-content {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
     }
-
-    .security-info {
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .welcome-message h2 {
-        font-size: 1.5rem;
+    to {
+        opacity: 1;
+        transform: translateX(0);
     }
 }
 </style>
